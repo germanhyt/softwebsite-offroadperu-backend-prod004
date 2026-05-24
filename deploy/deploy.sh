@@ -9,7 +9,7 @@ echo "==> Deploy backend en ${APP_DIR}"
 cd "${APP_DIR}"
 
 if [ ! -f .env.laravel ]; then
-  echo "ERROR: Falta .env.laravel en el VPS (config Laravel). Crear una sola vez en ${APP_DIR}/.env.laravel"
+  echo "ERROR: Falta .env.laravel en el VPS. Crear una sola vez en ${APP_DIR}/.env.laravel"
   exit 1
 fi
 
@@ -18,8 +18,14 @@ if [ ! -f .env ]; then
   exit 1
 fi
 
+cp .env /tmp/offroad-backend-compose.env.bak
+cp .env.laravel /tmp/offroad-backend-laravel.env.bak
+
 git fetch origin "${BRANCH}"
 git reset --hard "origin/${BRANCH}"
+
+mv /tmp/offroad-backend-compose.env.bak .env
+mv /tmp/offroad-backend-laravel.env.bak .env.laravel
 
 COMPOSE_FILES="-f docker-compose.yml"
 [ -f docker-compose.traefik.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.traefik.yml"
