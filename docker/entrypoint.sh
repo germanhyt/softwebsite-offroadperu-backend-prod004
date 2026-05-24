@@ -4,23 +4,12 @@ set -e
 cd /var/www/html
 
 if [ ! -f .env ]; then
-    echo "ERROR: .env file not found. Mount or create it before starting the container."
+    echo "ERROR: .env file not found. Mount .env.laravel as /var/www/html/.env on the VPS."
     exit 1
 fi
 
 echo "Waiting for MySQL..."
-until php -r "
-    try {
-        new PDO(
-            'mysql:host=' . getenv('DB_HOST') . ';port=' . (getenv('DB_PORT') ?: '3306'),
-            getenv('DB_USERNAME'),
-            getenv('DB_PASSWORD')
-        );
-        exit(0);
-    } catch (Exception \$e) {
-        exit(1);
-    }
-" 2>/dev/null; do
+until php artisan db:show >/dev/null 2>&1; do
     sleep 2
 done
 

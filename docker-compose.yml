@@ -43,8 +43,6 @@ services:
       dockerfile: Dockerfile
     container_name: offroadperu-laravel
     restart: unless-stopped
-    env_file:
-      - .env
     environment:
       DB_HOST: mysql
       DB_PORT: 3306

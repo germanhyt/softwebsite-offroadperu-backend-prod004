@@ -3,11 +3,6 @@ services:
     networks:
       - offroadperu-network
       - dokploy-network
-    env_file:
-      - .env.laravel
-    environment:
-      DB_HOST: mysql
-      DB_PORT: 3306
     volumes:
       - ./.env.laravel:/var/www/html/.env:ro
     labels:
