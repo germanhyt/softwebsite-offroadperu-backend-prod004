@@ -1,0 +1,28 @@
+services:
+  laravel:
+    networks:
+      - offroadperu-network
+      - dokploy-network
+    env_file:
+      - .env.laravel
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - ./.env.laravel:/var/www/html/.env:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.offroad-laravel.rule=Host(`admin.offroadperu.com.pe`)
+      - traefik.http.routers.offroad-laravel.entrypoints=websecure
+      - traefik.http.routers.offroad-laravel.tls.certresolver=letsencrypt
+      - traefik.http.routers.offroad-laravel.service=offroad-laravel
+      - traefik.http.services.offroad-laravel.loadbalancer.server.port=80
+      - traefik.http.routers.offroad-laravel-http.rule=Host(`admin.offroadperu.com.pe`)
+      - traefik.http.routers.offroad-laravel-http.entrypoints=web
+      - traefik.http.routers.offroad-laravel-http.middlewares=redirect-to-https@file
+
+networks:
+  dokploy-network:
+    external: true
+    name: dokploy-network

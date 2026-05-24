@@ -11,14 +11,19 @@ cd "${APP_DIR}"
 git fetch origin "${BRANCH}"
 git reset --hard "origin/${BRANCH}"
 
-docker compose pull --ignore-buildable 2>/dev/null || true
-docker compose build --pull
-docker compose up -d
+COMPOSE_FILES="-f docker-compose.yml"
+[ -f docker-compose.traefik.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.traefik.yml"
+[ -f docker-compose.ports.yml ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.ports.yml"
 
-docker compose exec -T laravel php artisan migrate --force --no-interaction
-docker compose exec -T laravel php artisan config:cache
-docker compose exec -T laravel php artisan route:cache
-docker compose exec -T laravel php artisan view:cache
+docker compose $COMPOSE_FILES pull --ignore-buildable 2>/dev/null || true
+docker compose $COMPOSE_FILES build --pull
+docker compose $COMPOSE_FILES up -d mysql phpmyadmin laravel
+
+docker compose $COMPOSE_FILES exec -T laravel php artisan storage:link --force || true
+docker compose $COMPOSE_FILES exec -T laravel php artisan migrate --force --no-interaction
+docker compose $COMPOSE_FILES exec -T laravel php artisan config:cache
+docker compose $COMPOSE_FILES exec -T laravel php artisan route:cache
+docker compose $COMPOSE_FILES exec -T laravel php artisan view:cache
 
 docker image prune -f
 

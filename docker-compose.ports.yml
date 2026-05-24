@@ -1,0 +1,8 @@
+services:
+  laravel:
+    ports:
+      - "8081:80"
+
+  phpmyadmin:
+    ports:
+      - "8083:80"
