@@ -9,6 +9,9 @@ return [
     'allowed_origins' => [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        // Acceso temporal por IP (VPS) hasta configurar DNS
+        'http://2.24.123.124:8082',
+        'http://2.24.123.124:8081',
         'https://offroadperu.com.pe',
         'https://www.offroadperu.com.pe',
         'https://admin.offroadperu.com.pe',
