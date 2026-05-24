@@ -48,6 +48,7 @@ done
 
 docker compose $COMPOSE_FILES exec -T laravel php artisan storage:link --force || true
 docker compose $COMPOSE_FILES exec -T laravel php artisan migrate --force --no-interaction
+docker compose $COMPOSE_FILES exec -T laravel php artisan route:clear
 docker compose $COMPOSE_FILES exec -T laravel php artisan config:cache
 docker compose $COMPOSE_FILES exec -T laravel php artisan view:cache
 docker compose $COMPOSE_FILES exec -T laravel php artisan filament:optimize 2>/dev/null || true

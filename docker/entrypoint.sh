@@ -18,7 +18,7 @@ php artisan migrate --force --no-interaction || {
     echo "WARNING: migrate finished with errors, continuing startup..."
 }
 php artisan config:cache
-php artisan route:cache
+php artisan route:clear
 php artisan view:cache
 php artisan filament:optimize 2>/dev/null || true
 
