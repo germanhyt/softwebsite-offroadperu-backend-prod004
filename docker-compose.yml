@@ -1,0 +1,88 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: offroadperu-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - offroadperu-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  phpmyadmin:
+    image: phpmyadmin:5-apache
+    container_name: offroadperu-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - offroadperu-network
+
+  laravel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: offroadperu-laravel
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+    volumes:
+      - laravel_storage:/var/www/html/storage/app
+      - laravel_public_storage:/var/www/html/public/storage
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - offroadperu-network
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: offroadperu-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CADDY_EMAIL: ${CADDY_EMAIL:-admin@offroadperu.com.pe}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - laravel
+    networks:
+      - offroadperu-network
+
+networks:
+  offroadperu-network:
+    name: offroadperu-network
+    driver: bridge
+
+volumes:
+  mysql_data:
+  laravel_storage:
+  laravel_public_storage:
+  caddy_data:
+  caddy_config:

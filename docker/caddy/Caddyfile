@@ -1,0 +1,15 @@
+{
+    email {$CADDY_EMAIL}
+}
+
+admin.offroadperu.com.pe {
+    reverse_proxy laravel:80
+}
+
+www.offroadperu.com.pe {
+    reverse_proxy frontend:3000
+}
+
+offroadperu.com.pe {
+    redir https://www.offroadperu.com.pe{uri} permanent
+}
