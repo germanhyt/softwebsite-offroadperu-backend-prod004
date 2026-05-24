@@ -24,8 +24,10 @@ until php -r "
     sleep 2
 done
 
-php artisan storage:link --force 2>/dev/null || true
-php artisan migrate --force --no-interaction
+php artisan storage:link --force >/dev/null 2>&1 || true
+php artisan migrate --force --no-interaction || {
+    echo "WARNING: migrate finished with errors, continuing startup..."
+}
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
