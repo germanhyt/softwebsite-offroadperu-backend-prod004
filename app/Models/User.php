@@ -34,10 +34,16 @@ class User extends Authenticatable implements FilamentUser
         'remember_token',
     ];
 
+
     public function canAccessPanel(Panel $panel): bool
     {
+        // if ($panel->getId() === 'admin') {
+        //     return str_ends_with($this->email, '@yourdomain.com') && $this->hasVerifiedEmail();
+        // }
+
         return true;
     }
+    
 
     /**
      * Get the attributes that should be cast.

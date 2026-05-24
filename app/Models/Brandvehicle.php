@@ -22,13 +22,11 @@ class Brandvehicle extends Model
     ];
 
 
-
     public function products()
     {
         return $this->hasMany(Product::class, 'id_brandvehicle');
     }
 
-    
     public function typevehicle(): BelongsTo
     {
         return $this->belongsTo(Typevehicle::class, 'id_typevehicle');

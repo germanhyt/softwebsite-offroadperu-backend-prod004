@@ -10,11 +10,31 @@ class ComplementaryproductRepository implements ComplementaryproductRepositoryIn
 
     public function getAll()
     {
-        return Complementaryproduct::all();
+        return Complementaryproduct::query()
+            ->with([
+                'product',
+                'complementaryproduct',
+            ])
+            ->get();
     }
 
     public function getComplementariesByproduct($id)
     {
-        return Complementaryproduct::where('id_product', $id)->get();
+
+        $query = Complementaryproduct::where('id_product', $id);
+
+        $query->with([
+            'complementaryproduct.typevehicle',
+            'complementaryproduct.brandvehicle',
+            'complementaryproduct.modellsproduct.modell',
+            'complementaryproduct.brand',
+            'complementaryproduct.categoriesproduct.category',
+        ]);
+
+        $query  = $query->whereHas('complementaryproduct', function ($query) {
+            $query->where('state', 1);
+        });
+
+        return $query->get();
     }
 }

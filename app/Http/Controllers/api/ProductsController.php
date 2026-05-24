@@ -16,10 +16,46 @@ class ProductsController extends Controller
         $this->productsRepositoryI = $productsRepositoryI;
     }
 
+    private function resolvePerPage(Request $request): int
+    {
+        $perPage = (int) $request->input('perPage', 15);
+        $perPage = max(1, $perPage);
+
+        return min($perPage, 100);
+    }
+
+    private function mapProductCard($product): array
+    {
+        $subcategory = $product->subcategory ?? optional($product->subcategoriesproduct->first())->subcategory;
+        $category = optional($subcategory)->category;
+
+        return [
+            'id' => $product->id,
+            'name' => $product->name,
+            'description' => $product->description,
+            'brand' => [
+                'id' => $product->brand->id ?? null,
+                'name' => $product->brand->name ?? null,
+            ],
+            'subcategory' => [
+                'id' => $subcategory->id ?? null,
+                'name' => $subcategory->name ?? null,
+            ],
+            'category' => [
+                'id' => $category->id ?? null,
+                'name' => $category->name ?? null,
+            ],
+            'img' => $product->img,
+            'stock' => $product->stock,
+            'price' => $product->price,
+        ];
+    }
+
     public function index(Request $request)
     {
         $filters = [];
         $products = null;
+        $perPage = $this->resolvePerPage($request);
 
         // Filtros avanzados
         if ($request->has('filter_typevehicle')) {
@@ -77,14 +113,27 @@ class ProductsController extends Controller
             $filters['id_stock'] = $request->input('filter_id_stock');
         }
 
+        if ($request->has('filter_state')) {
+            $filters['state'] = $request->input('filter_state');
+        }
+
 
         if (count($filters) > 0) {
-            $products = $this->productsRepositoryI->filters($filters, $request->input('perPage'));
+            $products = $this->productsRepositoryI->filters($filters, $perPage);
         } else {
-            $products = $this->productsRepositoryI->getPaginated($request->input('perPage'));
+            $products = $this->productsRepositoryI->getPaginated($perPage);
         }
 
         $productsCollect = collect($products->items());
+
+        $productsCollect = $productsCollect->sortBy(function ($product) {
+            return [
+                $product->brand->id ?? PHP_INT_MAX,  // Primero ordenar por marca
+                $product->nro_orden ?? PHP_INT_MAX,   // Luego por número de orden
+                $product->brand->name ?? '',          // Agregar nombre de marca para mejor agrupación
+                $product->id                          // Finalmente por ID para consistencia
+            ];
+        }, SORT_REGULAR, false)->values();
 
         $productsDTO = $productsCollect->map(function ($product) {
 
@@ -150,24 +199,6 @@ class ProductsController extends Controller
         ]);
     }
 
-    public function showAll()
-    {
-        $products = $this->productsRepositoryI->getAll();
-
-        $productsCollect = collect($products);
-
-        $productsDTO = $productsCollect->map(function ($product) {
-
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-            ];
-        });
-
-        return response()->json($productsDTO);
-    }
-
     public function showByName(Request $request)
     {
         $filters = [];
@@ -183,7 +214,11 @@ class ProductsController extends Controller
             $products = $this->productsRepositoryI->getAll();
         }
 
-        return response()->json($products);
+        $productsDTO = $products->map(function ($product) {
+            return $this->mapProductCard($product);
+        });
+
+        return response()->json($productsDTO);
     }
 
     public function showByDescription(Request $request)
@@ -202,26 +237,7 @@ class ProductsController extends Controller
         }
 
         $productsDTO = $products->map(function ($product) {
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'brand' => [
-                    'id' => $product->brand->id ?? null,
-                    'name' => $product->brand->name ?? null,
-                ],
-                'subcategory' => [
-                    'id' => $product->subcategory->id ?? null,
-                    'name' => $product->subcategory->name ?? null,
-                ],
-                'category' => [
-                    'id' => $product->subcategory->category->id ?? null,
-                    'name' => $product->subcategory->category->name ?? null,
-                ],
-                'img' => $product->img,
-                'stock' => $product->stock,
-                'price' => $product->price,
-            ];
+            return $this->mapProductCard($product);
         });
 
 

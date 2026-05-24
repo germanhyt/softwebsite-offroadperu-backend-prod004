@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+
 class Modell extends Model
 {
     use HasFactory;
@@ -20,6 +21,11 @@ class Modell extends Model
 
         'state',
     ];
+
+    protected $casts = [
+        'state' => 'boolean',
+    ];
+
 
     public function products()
     {

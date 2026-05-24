@@ -42,7 +42,8 @@ class DashboardPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
+                // Widgets\AccountWidget::class,
+                \App\Filament\Resources\BrandResource\Widgets\BrandStatsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

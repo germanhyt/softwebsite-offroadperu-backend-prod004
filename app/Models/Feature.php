@@ -27,5 +27,8 @@ class Feature extends Model
         return $this->hasMany(Highlightsfeature::class, 'id_feature');
     }
 
-
+    public function product()
+    {
+        return $this->belongsToMany(Product::class, 'featuresproduct', 'id_feature', 'id_product');
+    }
 }

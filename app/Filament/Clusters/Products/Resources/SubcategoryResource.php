@@ -87,12 +87,12 @@ class SubcategoryResource extends Resource
                     ->boolean()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Creado')
+                    ->label('Fecha de Creación')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Actualizado')
+                    ->label('Fecha de Actualización')
                     ->dateTime()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),

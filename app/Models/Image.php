@@ -12,12 +12,18 @@ class Image extends Model
     protected $table = 'images';
 
     protected $fillable = [
-        'name',
+        'url',
+        
         'state',
     ];
 
     public function imagesproduct()
     {
         return $this->hasMany(Imagesproduct::class, 'id_image');
+    }
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'imagesproducts', 'id_image', 'id_product');
     }
 }

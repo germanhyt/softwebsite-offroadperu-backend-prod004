@@ -8,6 +8,7 @@ use App\Filament\Clusters\Products\Resources\ProductResource\RelationManagers\Im
 use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Filament\Clusters\Products\Resources\ProductResource\Widgets\ProductStats;
 use App\Models\Product;
+use Filament\Actions\SelectAction;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -16,6 +17,7 @@ use Filament\Tables\Filters\QueryBuilder;
 use Filament\Tables\Filters\QueryBuilder\Constraints\BooleanConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\NumberConstraint;
 use Filament\Tables\Filters\QueryBuilder\Constraints\TextConstraint;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -26,13 +28,14 @@ class ProductResource extends Resource
     protected static ?string $model = Product::class;
 
     protected static ?string $navigationLabel = 'Productos';
+
     protected static ?string $label = 'Producto';
 
     protected static ?string $cluster = Products::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
-    protected static ?int $navigationSort = 0;
 
+    protected static ?int $navigationSort = 2;
 
 
     public static function form(Form $form): Form
@@ -48,6 +51,10 @@ class ProductResource extends Resource
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true),
+                                Forms\Components\TextInput::make('description')
+                                    ->label('Descripción para buscador')
+                                    ->columnSpan('full')
+                                    ->maxLength(255),
                                 Forms\Components\RichEditor::make('description_general')
                                     ->label('Descripción general')
                                     ->columnSpan('full')
@@ -57,23 +64,31 @@ class ProductResource extends Resource
                                 Forms\Components\Select::make('id_feature')
                                     ->label('Características')
                                     ->relationship(name: 'features', titleAttribute: 'description')
-                                    ->allowHtml()
+                                    ->getOptionLabelFromRecordUsing(fn($record) => strip_tags("{$record->id} - {$record->description}"))
                                     ->searchable()
                                     ->multiple()
                                     ->preload(),
+                                // Forms\Components\Select::make('complementaryProducts')
+                                //     ->label('Productos complementarios')
+                                //     ->relationship(name: 'complementaryProducts', titleAttribute: 'name')
+                                //     ->searchable()
+                                //     ->multiple()
+                                // // ->preload(),
                                 Forms\Components\Select::make('complementaryProducts')
                                     ->label('Productos complementarios')
                                     ->relationship(name: 'complementaryProducts', titleAttribute: 'name')
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->id} - {$record->name}")
                                     ->searchable()
-                                    ->multiple(),
-                                // ->preload(),
+                                    ->multiple()
+
                             ]),
                         // images
                         Forms\Components\Section::make('Imágenes')
                             ->schema([
                                 Forms\Components\FileUpload::make('img')
                                     ->label('Imagen principal')
-                                    ->directory('/images/accessory',)
+                                    ->directory('images/accessory')
+                                    ->disk('public')
                                     ->preserveFilenames()
                                     ->image()
                                     ->imageEditor()
@@ -128,19 +143,23 @@ class ProductResource extends Resource
 
                             ->schema([
                                 Forms\Components\Toggle::make('state')
-                                    ->label('Estado')
+                                    ->label(fn($get) => 'Estado (' . ($get('state') ? 'Activo' : 'Inactivo') . ')')
+                                    ->live()
                                     ->required()
                                     ->default(true),
                                 Forms\Components\Toggle::make('most_requested')
-                                    ->label('Más solicitado')
+                                    ->label(fn($get) => 'Más solicitado (' . ($get('most_requested') ? 'Activo' : 'Inactivo') . ')')
+                                    ->live()
                                     ->required()
                                     ->default(false),
                                 Forms\Components\Toggle::make('trend')
-                                    ->label('Tendencia')
+                                    ->label(fn($get) => 'Tendencia (' . ($get('trend') ? 'Activo' : 'Inactivo') . ')')
+                                    ->live()
                                     ->required()
                                     ->default(false),
                             ])
                             ->columns(2),
+
                         Forms\Components\Section::make('Relaciones')
                             ->schema([
                                 Forms\Components\Select::make('id_typevehicle')
@@ -152,15 +171,45 @@ class ProductResource extends Resource
                                     ->label('Marca')
                                     ->relationship(name: 'brand', titleAttribute: 'name')
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    ->reactive() // Hace que este campo reaccione a cambios
+                                    ->afterStateUpdated(
+                                        fn($state, callable $set) =>
+                                        $set(
+                                            'nro_orden',
+                                            $state
+                                                ? (Product::where('id_brand', $state)->max('nro_orden') ?? 0) + 1
+                                                : 1
+                                        )
+                                    ),
+                                Forms\Components\TextInput::make('nro_orden')
+                                    ->label('Nro Orden')
+                                    ->numeric()
+                                    ->required()
+                                // ->disabled()
+                                ,
                                 Forms\Components\Select::make('id_brandvehicle')
                                     ->label('Marca de vehículo')
                                     ->relationship(name: 'brandvehicle', titleAttribute: 'name')
                                     ->searchable()
                                     ->preload(),
-                                Forms\Components\Repeater::make('modellsProducts')
+                                Forms\Components\CheckboxList::make('id_category')
+                                    ->label('Categorías')
+                                    ->relationship(name: 'categories', titleAttribute: 'name')
+                                    // ->searchable()
+                                    // ->multiple()
+                                    // ->preload()
+                                    ->columns(2),
+                                Forms\Components\CheckboxList::make('id_subcategory')
+                                    ->label('Subcategorías')
+                                    ->relationship(name: 'subcategories', titleAttribute: 'name')
+                                    // ->searchable()
+                                    // ->multiple()
+                                    // ->preload()
+                                    ->columns(2),
+                                Forms\Components\Repeater::make('modellsproduct')
                                     ->label('Modelos')
-                                    ->relationship('modellsProducts')
+                                    ->relationship('modellsproduct')
                                     ->schema([
                                         Forms\Components\Select::make('id_modell')
                                             ->label('Modelo')
@@ -170,25 +219,34 @@ class ProductResource extends Resource
                                             ->columnSpanFull(),
                                         Forms\Components\TextInput::make('year_start')
                                             ->label('Año de inicio')
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->required(),
                                         Forms\Components\TextInput::make('year_end')
                                             ->label('Año de fin')
-                                            ->numeric(),
+                                            ->numeric()
+                                            ->required(),
                                     ])
                                     ->columns(2),
                             ]),
-                        Forms\Components\Section::make('Asociaciones')
-                            ->schema([
-                                Forms\Components\CheckboxList::make('id_category')
-                                    ->label('Categorías')
-                                    ->relationship(name: 'categories', titleAttribute: 'name')
-                                    ->columns(2),
-                                Forms\Components\CheckboxList::make('id_subcategory')
-                                    ->label('Subcategorías')
-                                    ->relationship(name: 'subcategories', titleAttribute: 'name')
-                                    ->columns(2),
 
-                            ]),
+                        // Forms\Components\Section::make('Asociaciones')
+                        //     ->schema([
+                        //         Forms\Components\CheckboxList::make('id_category')
+                        //             ->label('Categorías')
+                        //             ->relationship(name: 'categories', titleAttribute: 'name')
+                        //             // ->searchable()
+                        //             // ->multiple()
+                        //             // ->preload()
+                        //             ->columns(2),
+                        //         Forms\Components\CheckboxList::make('id_subcategory')
+                        //             ->label('Subcategorías')
+                        //             ->relationship(name: 'subcategories', titleAttribute: 'name')
+                        //             // ->searchable()
+                        //             // ->multiple()
+                        //             // ->preload()
+                        //             ->columns(2),
+
+                        //     ]),
                     ])->columnSpan(['lg' => 1]),
 
             ])
@@ -203,9 +261,10 @@ class ProductResource extends Resource
                 // id
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\ImageColumn::make('img')
+                    ->disk('public')
                     // ->getStateUsing(function (Product $record) {
                     //     $baseUrlImage = 'http://localhost/app/';
                     //     return $baseUrlImage . $record->img;
@@ -214,7 +273,11 @@ class ProductResource extends Resource
                 // Tables\Columns\ImageColumn::make('img')
                 //     ->label('Imagen')
                 //     ->getStateUsing(fn($record) => asset('storage/' . $record->img)),
-
+                Tables\Columns\TextColumn::make('nro_orden')
+                    ->label('Nro Orden')
+                    ->alignCenter()
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('name')
                     ->label('Nombre')
                     ->searchable()
@@ -226,7 +289,6 @@ class ProductResource extends Resource
                     ->limit(20)
                     ->searchable()
                     ->sortable(),
-
 
                 Tables\Columns\TextColumn::make('categories.name')
                     ->label('Categorías')
@@ -243,96 +305,136 @@ class ProductResource extends Resource
 
                 Tables\Columns\TextColumn::make('typevehicle.name')
                     ->label('Tipo de vehículo')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('brand.name')
                     ->label('Marca')
-                    ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('brandvehicle.name')
                     ->label('Marca de vehículo')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('stock')
                     ->numeric()
-                    ->sortable(),
+                // ->sortable()
+                ,
                 Tables\Columns\TextColumn::make('price')
                     ->label('Precio')
                     ->money()
-                    ->sortable(),
+                // ->sortable()
+                ,
                 Tables\Columns\TextColumn::make('front_lift')
                     ->label('Front Lift')
-                    ->searchable(),
+                // ->searchable()
+                ,
                 Tables\Columns\TextColumn::make('rear_lift')
                     ->label('Rear Lift')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('discount')
                     ->label('Descuento')
                     ->numeric()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // ->sortable()
+                // ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                // Tables\Columns\TextColumn::make('lift')
+                //     ->searchable()
+                //     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\IconColumn::make('most_requested')
                     ->label('Más solicitado')
                     ->boolean()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // ->sortable()
+                // ->toggleable(isToggledHiddenByDefault: true)
+                ,
 
                 Tables\Columns\IconColumn::make('trend')
-                    ->label('Estado')
+                    ->label('Tendencia')
                     ->boolean()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                // ->sortable()
+                // ->toggleable(isToggledHiddenByDefault: true)
+                ,
 
                 Tables\Columns\IconColumn::make('state')
                     ->label('Estado')
                     ->boolean()
-                    ->sortable(),
+                // ->sortable()
+                ,
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label('Fecha de Creación')
                     ->dateTime()
-                    ->sortable()
+                    // ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Fecha de Actualización')
                     ->dateTime()
-                    ->sortable()
+                    // ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                QueryBuilder::make()
-                    ->constraints([
-                        TextConstraint::make('name')
-                            ->label('Nombre'),
-                        TextConstraint::make('description')
-                            ->label('Descripción'),
-                        TextConstraint::make('categories.name')
-                            ->label('Categoría'),
-                        TextConstraint::make('typevehicle.name')
-                            ->label('Tipo de vehículo'),
-                        TextConstraint::make('brand.name')
-                            ->label('Marca'),
-                        TextConstraint::make('brandvehicle.name')
-                            ->label('Marca de vehículo'),
-                        NumberConstraint::make('price')
-                            ->label('Precio')
-                            ->icon('heroicon-m-currency-dollar'),
-                        NumberConstraint::make('discount')
-                            ->label('Descuento')
-                            ->icon('heroicon-m-currency-dollar'),
-                        NumberConstraint::make('stock'),
-                        BooleanConstraint::make('most_requested')
-                            ->label('Más solicitado'),
-                        BooleanConstraint::make('trend')
-                            ->label('Tendencia'),
-                        BooleanConstraint::make('state')
-                            ->label('Estado'),
+                //
+                SelectFilter::make('id_brand')
+                    ->label('Filtrar por Marca')
+                    ->relationship('brand', 'name')
+                    ->searchable()
+                    ->preload(),
 
-                    ])
-                    ->constraintPickerColumns(3),
-            ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
-            ->deferFilters()
+                SelectFilter::make('id_brandvehicle')
+                    ->label('Filtrar por Marca de Vehículo')
+                    ->relationship('brandvehicle', 'name')
+                    ->searchable()
+                    ->preload(),
+
+                SelectFilter::make('id_category')
+                    ->label('Filtrar por Categoría')
+                    ->relationship('categories', 'name')
+                    ->searchable()
+                    ->preload(),
+
+            ])
+
+            // ->filters([
+            //     QueryBuilder::make()
+            //         ->constraints([
+            //             TextConstraint::make('name')
+            //                 ->label('Nombre'),
+            //             TextConstraint::make('description_general')
+            //                 ->label('Descripción general'),
+            //             TextConstraint::make('categories.name')
+            //                 ->label('Categoría'),
+            //             TextConstraint::make('typevehicle.name')
+            //                 ->label('Tipo de vehículo'),
+            //             TextConstraint::make('brand.name')
+            //                 ->label('Marca'),
+            //             TextConstraint::make('brandvehicle.name')
+            //                 ->label('Marca de vehículo'),
+            //             NumberConstraint::make('price')
+            //                 ->label('Precio')
+            //                 ->icon('heroicon-m-currency-dollar'),
+            //             NumberConstraint::make('discount')
+            //                 ->label('Descuento')
+            //                 ->icon('heroicon-m-currency-dollar'),
+            //             NumberConstraint::make('stock'),
+            //             TextConstraint::make('front_lift')
+            //                 ->label('front_lift'),
+            //             TextConstraint::make('rear_lift')
+            //                 ->label('rear_lift'),
+            //             BooleanConstraint::make('most_requested')
+            //                 ->label('Más solicitado'),
+            //             BooleanConstraint::make('trend')
+            //                 ->label('Tendencia'),
+            //             BooleanConstraint::make('state')
+            //                 ->label('Estado'),
+
+            //         ])
+            //         ->constraintPickerColumns(3),
+            // ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            // ->deferFilters()
+
+            ->headerActions([])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])

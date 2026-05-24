@@ -19,11 +19,38 @@ class ComplementaryproductController extends Controller
     {
         $complementaryproducts = $this->complementaryproductRepositoryI->getAll();
 
-        return response()->json($complementaryproducts);
+        $productsDTO = $complementaryproducts->map(function ($complementprod) {
+            if (!$complementprod || !$complementprod->complementaryproduct) {
+                return null;
+            }
+
+            return [
+                'id' => $complementprod->id,
+                'product' => [
+                    'id' => $complementprod->product->id ?? null,
+                    'name' => $complementprod->product->name ?? null,
+                ],
+                'complementaryproduct' => [
+                    'id' => $complementprod->complementaryproduct->id,
+                    'name' => $complementprod->complementaryproduct->name,
+                    'description' => $complementprod->complementaryproduct->description,
+                    'img' => $complementprod->complementaryproduct->img,
+                    'price' => $complementprod->complementaryproduct->price,
+                    'stock' => $complementprod->complementaryproduct->stock,
+                    'state' => $complementprod->complementaryproduct->state,
+                ],
+            ];
+        })->filter()->values();
+
+        return response()->json($productsDTO);
     }
 
     public function getComplementariesByproduct($id)
     {
+        if (!is_numeric($id) || (int) $id <= 0) {
+            return response()->json(['message' => 'Id inválido'], 422);
+        }
+
         $complementaryproducts = $this->complementaryproductRepositoryI->getComplementariesByproduct($id);
 
 
@@ -48,6 +75,8 @@ class ComplementaryproductController extends Controller
                 }
             );
 
+            $categoryRelation = optional($complementprod->complementaryproduct->categoriesproduct->first())->category;
+
             return [
                 'id' => $complementprod->complementaryproduct->id,
                 'name' => $complementprod->complementaryproduct->name,
@@ -66,8 +95,8 @@ class ComplementaryproductController extends Controller
                     'name' => $complementprod->complementaryproduct->brand->name ?? null,
                 ],
                 'category' => [
-                    'id' => $complementprod->complementaryproduct->category->id ?? null,
-                    'name' => $complementprod->complementaryproduct->category->name ?? null,
+                    'id' => $categoryRelation->id ?? null,
+                    'name' => $categoryRelation->name ?? null,
                 ],
                 'img' => $complementprod->complementaryproduct->img,
                 'stock' => $complementprod->complementaryproduct->stock,

@@ -4,5 +4,10 @@ use Illuminate\Support\Facades\Route;
 
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/dashboard/login');
+});
+
+
+Route::get('/excel/clientes', function () {
+    return view('excel');
 });

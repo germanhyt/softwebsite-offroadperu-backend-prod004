@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -27,6 +26,8 @@ class Product extends Model
         'stock',
         'discount',
         'trend',
+
+        'nro_orden',
 
         'most_requested',
         'front_lift',
@@ -84,6 +85,15 @@ class Product extends Model
     // {
     //     return $this->hasMany(Complementaryproduct::class, 'id_product');
     // }
+    public function complementaryProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'complementaryproducts', 'id_product', 'id_complementaryproduct');
+    }
+    public function parentProducts(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class, 'complementaryproducts', 'id_complementaryproduct', 'id_product');
+    }
+
 
     public function complementaryproducts2()
     {
@@ -94,6 +104,18 @@ class Product extends Model
     // {
     //     return $this->hasMany(Modellsproduct::class, 'id_product');
     // }
+    public function modells(): BelongsToMany
+    {
+        return $this->belongsToMany(Modell::class, 'modellsproducts', 'id_product', 'id_modell')
+            ->using(ModellsProduct::class)
+            ->withPivot('year_start', 'year_end')
+            ->withTimestamps();
+    }
+    public function modellsproduct(): HasMany
+    {
+        return $this->hasMany(Modellsproduct::class, 'id_product');
+    }
+
 
     // public function generaldescription()
     // {
@@ -121,28 +143,4 @@ class Product extends Model
     {
         return $this->belongsToMany(Feature::class, 'featuresproducts', 'id_product', 'id_feature')->withTimestamps();
     }
-
-    public function complementaryProducts(): BelongsToMany
-    {
-        return $this->belongsToMany(Product::class, 'complementaryproducts', 'id_product', 'id_complementaryproduct');
-    }
-
-    public function parentProducts(): BelongsToMany
-    {
-        return $this->belongsToMany(Product::class, 'complementaryproducts', 'id_complementaryproduct', 'id_product');
-    }
-
-    public function modells(): BelongsToMany
-    {
-        return $this->belongsToMany(Modell::class, 'modellsproducts', 'id_product', 'id_modell')
-                    ->using(ModellsProduct::class)
-                    ->withPivot('year_start', 'year_end')
-                    ->withTimestamps();
-    }
-
-    public function modellsProducts(): HasMany
-    {
-        return $this->hasMany(Modellsproduct::class, 'id_product');
-    }
-
 }

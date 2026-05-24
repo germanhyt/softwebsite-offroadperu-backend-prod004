@@ -18,10 +18,13 @@ class Category extends Model
         'state',
     ];
 
+
+
     public function categoriesproduct()
     {
         return $this->hasMany(Categoriesproduct::class, 'id_category');
     }
+
 
     public function subcategories(): HasMany
     {

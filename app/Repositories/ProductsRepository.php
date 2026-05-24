@@ -8,44 +8,98 @@ use Illuminate\Support\Facades\DB;
 
 class ProductsRepository implements ProductsRepositoryInterface
 {
+    private function productRelations(): array
+    {
+        return [
+            'brand',
+            'brandvehicle',
+            'typevehicle',
+            'modellsproduct.modell',
+            'featuresproduct.feature',
+            'imagesproduct.image',
+            'categoriesproduct.category',
+            'subcategoriesproduct.subcategory',
+        ];
+    }
+
+    private function escapeLike(string $value): string
+    {
+        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $value);
+    }
+
+    private function sanitizePerPage($perPage): int
+    {
+        $resolvedPerPage = (int) ($perPage ?? 15);
+        $resolvedPerPage = max(1, $resolvedPerPage);
+
+        return min($resolvedPerPage, 100);
+    }
+
     public function getAll()
     {
-        return Product::all();
+        $products = Product::query()
+            ->with($this->productRelations())
+            ->get();
+
+        return $products;
     }
 
     public function getById($id)
     {
-        return Product::findOrFail($id);
+        return Product::query()
+            ->with($this->productRelations())
+            ->findOrFail($id);
     }
 
     public function getByTrend($id)
     {
-        return Product::where('trend', $id)->get();
+        $query = Product::query()
+            ->with($this->productRelations())
+            ->where('trend', $id);
+
+        $query->where('state', 1);
+
+        return $query->get();
     }
 
     public function getByMostRequested($id)
     {
-        return Product::where('most_requested', $id)->get();
+
+        $query = Product::query()
+            ->with($this->productRelations())
+            ->where('most_requested', $id);
+
+        $query->where('state', 1);
+
+        return $query->get();
     }
 
     public function getByName(array $filters)
     {
-        $query = Product::query();
+        $query = Product::query()
+            ->with($this->productRelations());
 
         if (isset($filters['name'])) {
-            $query->where('name', 'LIKE', '%' . $filters['name'] . '%');
+            $searchName = $this->escapeLike((string) $filters['name']);
+            $query->where('name', 'LIKE', '%' . $searchName . '%');
         }
+
+        $query->where('state', 1);
 
         return $query->get();
     }
 
     public function getByDescription(array $filters)
     {
-        $query = Product::query();
+        $query = Product::query()
+            ->with($this->productRelations());
 
         if (isset($filters['description'])) {
-            $query->where('description', 'LIKE', '%' . $filters['description'] . '%');
+            $searchDescription = $this->escapeLike((string) $filters['description']);
+            $query->where('description', 'LIKE', '%' . $searchDescription . '%');
         }
+
+        $query->where('state', 1);
 
         return $query->get();
     }
@@ -53,44 +107,51 @@ class ProductsRepository implements ProductsRepositoryInterface
 
     public function filters(array $filters, $perPage)
     {
-        $query = Product::query();
+        $query = Product::query()
+            ->with($this->productRelations());
 
 
         if (isset($filters['typevehicle'])) {
             $query->whereHas('typevehicle', function ($query) use ($filters) {
-                $query->where('name', 'LIKE', '%' . $filters['typevehicle'] . '%');
+                $searchTypeVehicle = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $filters['typevehicle']);
+                $query->where('name', 'LIKE', '%' . $searchTypeVehicle . '%');
             });
         }
 
         if (isset($filters['brandvehicle'])) {
             $query->whereHas('brandvehicle', function ($query) use ($filters) {
-                $query->where('name', 'LIKE', '%' . $filters['brandvehicle'] . '%');
+                $searchBrandVehicle = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $filters['brandvehicle']);
+                $query->where('name', 'LIKE', '%' . $searchBrandVehicle . '%');
             });
         }
 
         if (isset($filters['modell'])) {
             $query->whereExists(function ($query) use ($filters) {
+                $searchModel = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $filters['modell']);
                 $query->select(DB::raw(1))
                     ->from('modellsproducts as mp')
                     ->join('modells as m', 'm.id', '=', 'mp.id_modell')
                     ->whereColumn('mp.id_product', 'products.id')
-                    ->where('m.name', 'LIKE', '%' . $filters['modell'] . '%');
+                    ->where('m.name', 'LIKE', '%' . $searchModel . '%');
             });
         }
 
         if (isset($filters['brand'])) {
             $query->whereHas('brand', function ($query) use ($filters) {
-                $query->where('name', 'LIKE', '%' . $filters['brand'] . '%');
+                $searchBrand = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $filters['brand']);
+                $query->where('name', 'LIKE', '%' . $searchBrand . '%');
             });
         }
 
 
         if (isset($filters['name'])) {
-            $query->where('name', 'like', '%' . $filters['name'] . '%');
+            $searchName = $this->escapeLike((string) $filters['name']);
+            $query->where('name', 'LIKE', '%' . $searchName . '%');
         }
 
         if (isset($filters['description'])) {
-            $query->where('description', 'like', '%' . $filters['description'] . '%');
+            $searchDescription = $this->escapeLike((string) $filters['description']);
+            $query->where('description', 'LIKE', '%' . $searchDescription . '%');
         }
 
 
@@ -116,7 +177,8 @@ class ProductsRepository implements ProductsRepositoryInterface
         if (isset($filters['category'])) {
             $query->whereHas('categoriesproduct', function ($query) use ($filters) {
                 $query->whereHas('category', function ($query) use ($filters) {
-                    $query->where('name', 'LIKE', '%' . $filters['category'] . '%');
+                    $searchCategory = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], (string) $filters['category']);
+                    $query->where('name', 'LIKE', '%' . $searchCategory . '%');
                 });
             });
         }
@@ -134,8 +196,6 @@ class ProductsRepository implements ProductsRepositoryInterface
             });
         }
 
-
-
         if (isset($filters['mostrequested'])) {
             $query->where('most_requested', $filters['mostrequested']);
         }
@@ -144,11 +204,13 @@ class ProductsRepository implements ProductsRepositoryInterface
             $query->where('state', $filters['state']);
         }
 
-        return $query->paginate($perPage);
+        return $query->paginate($this->sanitizePerPage($perPage));
     }
 
     public function getPaginated($perPage)
     {
-        return Product::paginate($perPage);
+        return Product::query()
+            ->with($this->productRelations())
+            ->paginate($this->sanitizePerPage($perPage));
     }
 }

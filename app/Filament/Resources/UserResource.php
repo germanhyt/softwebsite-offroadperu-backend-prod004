@@ -12,7 +12,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
@@ -41,17 +40,15 @@ class UserResource extends Resource
                                 Forms\Components\TextInput::make('password')
                                     ->label('Contraseña')
                                     ->password()
+                                    ->required()
                                     ->maxLength(255)
                                     ->minLength(8)
                                     ->regex('/^(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/')
-                                    ->dehydrateStateUsing(fn($state) => Hash::make($state))
-                                    ->dehydrated(fn($state) => filled($state))
-                                    ->required(fn(string $context): bool => $context === 'create')
                                     ->helperText('La contraseña debe tener al menos 8 caracteres, incluyendo al menos un carácter especial.'),
                                 Forms\Components\TextInput::make('password_confirmation')
                                     ->label('Confirmar contraseña')
                                     ->password()
-                                    ->required(fn(string $context): bool => $context === 'create')
+                                    ->required()
                                     ->maxLength(255)
                                     ->same('password'),
 

@@ -6,6 +6,7 @@ use App\Interfaces\BrandRepositoryInterface;
 use App\Interfaces\BrandsmodellRepositoryInterface;
 use App\Interfaces\BrandvehicleRepositoryInterface;
 use App\Interfaces\CategoryRepositoryInterface;
+use App\Interfaces\ClientRepositoryInterface;
 use App\Interfaces\ComplementaryproductRepositoryInterface;
 use App\Interfaces\ModellRepositoryInterface;
 use App\Interfaces\ProductsRepositoryInterface;
@@ -15,6 +16,7 @@ use App\Repositories\BrandRepository;
 use App\Repositories\BrandsmodellRepository;
 use App\Repositories\BrandvehicleRepository;
 use App\Repositories\CategoryRepository;
+use App\Repositories\ClientRepository;
 use App\Repositories\ComplementaryproductRepository;
 use App\Repositories\ModellRepository;
 use App\Repositories\ProductsRepository;
@@ -72,6 +74,11 @@ class RepositoryServiceProvider extends ServiceProvider
         $this->app->bind(
             SubcategoryRepositoryInterface::class,
             SubcategoryRepository::class
+        );
+
+        $this->app->bind(
+            ClientRepositoryInterface::class,
+            ClientRepository::class
         );
     }
 

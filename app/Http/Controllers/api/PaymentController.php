@@ -11,22 +11,24 @@ class PaymentController extends Controller
     //
     public function createPayment(Request $request)
     {
-        $client = new Client();
-        $response = $client->post('https://api.izipay.pe/v1/payments', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . env('IZIPAY_API_KEY'),
-            ],
-            'json' => [
-                'amount' => $request->amount,
-                'currency' => 'PEN',
-                'orderId' => 'order-' . uniqid(),
-                'customer' => [
-                    'email' => $request->email,
-                ],
-            ],
-        ]);
+        // $client = new Client();
+        // $response = $client->post('https://api.izipay.pe/v1/payments', [
+        //     'headers' => [
+        //         'Authorization' => 'Bearer ' . env('IZIPAY_API_KEY'),
+        //     ],
+        //     'json' => [
+        //         'amount' => $request->amount,
+        //         'currency' => 'PEN',
+        //         'orderId' => 'order-' . uniqid(),
+        //         'customer' => [
+        //             'email' => $request->email,
+        //         ],
+        //     ],
+        // ]);
 
-        return response()->json(json_decode($response->getBody()->getContents()));
+        // return response()->json(json_decode($response->getBody()->getContents()));
+
+        return response()->json(['message' => 'Payment created successfully']);
     }
 
     public function validatePayment(Request $request)

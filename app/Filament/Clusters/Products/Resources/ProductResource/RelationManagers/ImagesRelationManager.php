@@ -21,9 +21,10 @@ class ImagesRelationManager extends RelationManager
             ->schema([
                 Forms\Components\FileUpload::make('url')
                     ->label('Imagenes adicionales')
-                    ->directory('/images/accessory',)
+                    ->directory('images/accessory')
                     ->preserveFilenames()
                     ->image()
+                    ->disk('public')
                     ->imageEditor()
                     ->columnSpan('full'),
                 // ->disk('public'),
@@ -41,6 +42,7 @@ class ImagesRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\ImageColumn::make('url')
                     ->label('Imagen')
+                    ->disk('public')
                     ->height('100px'),
                 //url
                 // Tables\Columns\TextColumn::make('url')

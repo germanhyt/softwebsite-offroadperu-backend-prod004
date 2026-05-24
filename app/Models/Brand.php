@@ -23,6 +23,11 @@ class Brand extends Model
         'state',
     ];
 
+    protected $casts = [
+        'state' => 'boolean',
+    ];
+
+
 
     public function products()
     {
