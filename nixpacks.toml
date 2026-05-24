@@ -1,7 +1,7 @@
 [phases.install]
 cmds = [
   "composer install --no-dev --ignore-platform-reqs --no-scripts",
-  "npm ci --omit=dev || npm install --omit=dev"
+  "npm install"
 ]
 
 [phases.build]
